@@ -1,19 +1,32 @@
 # 使用教程
 
-[English](./tutorial_en.md) | 中文
-
 <div align="center">
-  <img src="../static/images/logo.png" alt="logo"/>
-  <h1 align="center">IPTV-API</h1>
+  <a href="../README.md">项目首页</a> ·
+  <a href="./README.md">文档中心</a> ·
+  <a href="./config.md">配置参数</a> ·
+  中文 | <a href="./tutorial_en.md">English</a>
 </div>
 
-📺IPTV直播源自动更新平台，『🤖全自动采集、筛选、测速、生成流程🚀』，支持丰富的个性化配置，将结果地址输入播放器即可观看
+> [!TIP]
+> 项目支持工作流、命令行、GUI 和 Docker 共 4 种运行方式，请按使用环境选择。
 
-以下一共4种安装运行方式，选择一种适合您的即可
+<details open>
+<summary><strong>目录</strong></summary>
+
+- [工作流部署](#工作流部署)
+- [命令行](#命令行)
+- [GUI 软件](#gui-软件)
+- [Docker](#docker)
+  - [推流使用教程](#推流使用教程)
+
+</details>
 
 ## 工作流部署
 
-使用Github工作流部署，自动更新接口
+使用 GitHub Actions 部署并手动执行更新。
+
+> [!IMPORTANT]
+> GitHub Actions 资源有限，工作流更新只能手动触发。如果需要频繁更新或定时执行，请使用其他方式部署。
 
 ### 进入IPTV-API项目
 
@@ -34,6 +47,12 @@
 
 由于本项目将持续迭代优化，如果您想获取最新的更新内容，可进行如下操作
 
+> [!WARNING]
+> 如果您的目的是更新自己 Fork 的代码，请不要点击 `Contribute` 或 `Open pull request` 创建 PR。
+> 请进入您自己的仓库主页，使用 `Sync fork` → `Update branch`。
+> 如果出现同步冲突，请按照下方说明选择 `Discard commits`。
+> 只有想向主仓库贡献代码时，才需要创建 Pull Request。
+
 #### 1. Watch
 
 关注该项目，后续更新日志将以`releases`发布，届时您将收到邮件通知
@@ -50,6 +69,9 @@
 
 这是因为某些文件与主仓库的默认文件冲突了，点击`Discard commits`即可更新最新代码
 ![冲突解决](./images/conflict.png '冲突解决')
+
+> [!IMPORTANT]
+> 为了避免后续更新代码发生冲突，以下修改`config`目录下的文件时建议复制文件后重命名添加`user_`前缀
 
 ### 修改模板
 
@@ -90,38 +112,58 @@
 
 1. 创建文件
 2. 配置文件命名为`user_config.ini`
-3. 粘贴默认配置 （创建`user_config.ini`可以只输入想要修改的配置项即可，无需全部复制 config.ini，注意配置文件上方的
-   `[Settings]`必须保留，否则下方的自定义配置不生效）
-4. 修改模板和结果文件配置：
+3. 粘贴默认配置（创建`user_config.ini`时，仅填写想要修改的配置项即可，无需全部复制`config.ini`）
+4. 修改模板和结果文件配置以及CDN代理加速（推荐）：
     - source_file = config/user_demo.txt
     - final_file = output/user_result.txt
+    - cdn_url = （前往`Govin`公众号回复`cdn`获取）
 5. 点击`Commit changes...`进行保存
 
 ![创建user_config.ini](./images/edit-user-config.png '创建user_config.ini')
 ![编辑final_file配置](./images/edit-user-final-file.png '编辑source_file配置')
 ![编辑source_file配置](./images/edit-user-source-file.png '编辑source_file配置')
 
+> [!IMPORTANT]
+> `user_config.ini` 顶部的 `[Settings]` 必须保留，否则下方的自定义配置不会生效。
+
 按照您的需要适当调整配置，以下是默认配置说明：
 [配置参数](./config.md)
 
 > [!NOTE]
-> 1. 对于开启显示接口信息，由于部分播放器（如`PotPlayer`）不支持解析接口补充信息，导致无法正常播放，可修改配置:`open_url_info
-=False`（GUI：取消勾选显示接口信息）关闭该功能
-> 2. 如果你的网络确定支持IPv6，可修改配置:`ipv6_support =True`(GUI：勾选`强制认为当前网络支持IPv6`）跳过支持性检查
-> 3. 开启关键字搜索（默认关闭）会大幅增加更新耗时，不推荐开启
+> 1. 部分播放器（如 `PotPlayer`）不支持解析接口补充信息，可能导致无法播放。可设置 `open_url_info = False`（GUI：取消勾选“显示接口信息”）关闭该功能
+> 2. 如果网络确定支持 IPv6，可设置 `ipv6_support = True`（GUI：勾选“强制认为当前网络支持 IPv6”）跳过支持性检查
+> 3. 如需为接口指定播放/测速请求头，可配置全局 `user_agent`（统一 UA），或在 `config/subscribe.txt` 的订阅地址后追加 `UA=值`（针对单个订阅源）；UA 会写入 `.m3u` 结果，无需开启 `open_headers`
+> 4. 配置 `location`（归属地）/`isp`（运营商）后，默认会直接过滤掉不匹配的接口；若开启 `open_supply = True`，不匹配的接口将不再丢弃，而是降权排到该频道结果末尾作为补充，避免可用接口被误删
+> 5. 通过 `sort_by` 自定义每个频道内接口的排序优先级，逗号分隔，可选 `speed`（速率）、`delay`（延迟）、`resolution`（分辨率），按从前到后依次比较，例如 `resolution,speed` 表示优先按分辨率、其次按速率排序
 
-#### 同理你可以自定义订阅源、黑名单、白名单（建议复制文件重命名添加`user_`前缀）
+#### 添加数据源与更多
 
-- 订阅源（`config/subscribe.txt`）
+**订阅源（`config/subscribe.txt`）**
 
-  支持txt和m3u地址作为订阅，程序将依次读取其中的频道接口数据
-  ![订阅源](./images/subscribe.png '订阅源')
+> [!IMPORTANT]
+> 项目不提供默认订阅地址，请自行添加；否则更新结果可能为空。
+
+支持 txt 和 m3u 地址作为订阅，程序将依次读取其中的频道接口数据。
+![订阅源](./images/subscribe.png '订阅源')
+
+如果某个订阅源需要特定的 `User-Agent` 才能访问，可在订阅地址后追加 `UA=值` 指定（包含空格时用引号包裹），例如：
+
+```text
+https://example.com/sub.m3u UA=okHttp/Mod-1.5.0.0
+https://example.com/sub2.m3u UA="Mozilla/5.0 xxx"
+```
+
+该 `UA` 会同时用于：拉取该订阅内容、对该订阅源下各接口测速、以及写入 `.m3u` 结果（供播放器使用），无需开启 `open_headers`。若希望对所有接口统一指定一个 UA（避免逐条添加），可在配置中设置全局 `user_agent`。优先级：接口自带 UA（m3u 内含 `#EXTVLCOPT`）> 订阅地址 UA > 全局 `user_agent` > 内置默认 UA。注意：请求头只能写入 `.m3u` 结果，`.txt` 格式无法携带 UA。
 
 
 - 本地源（`config/local.txt`）
 
-  频道接口数据来源于本地文件，程序将依次读取其中的频道接口数据
-  ![本地源](./images/local.png '本地源')
+  频道接口数据来源于本地文件，如果有多个本地源文件，可以在`config`下创建`local`目录进行存放，程序将依次读取其中的频道接口数据，支持txt/m3u文件。
+
+
+- 台标源（`config/logo`）
+
+  频道台标图片存放目录，程序会根据模板中的频道名称去该目录下匹配对应的台标图片，如果使用了远程库`logo_url`，则优先从远程库中获取
 
 
 - EPG源（`config/epg.txt`）
@@ -131,25 +173,22 @@
 
 - 频道别名（`config/alias.txt`）
 
-  频道名称的别名名单，用于获取接口时将多种名称映射为一个名称的结果，可以提升获取量与准确率，格式：模板频道名称,别名1,别名2,别名3
+  频道名称的别名名单，用于获取接口时将多种名称映射为一个名称的结果，可以提升获取量与准确率，格式：模板频道名称,别名1,别名2,别名3。
+
+  程序会自动归一化简繁体、大小写和常见分隔符，并依次使用精确别名和受限正则匹配；通常无需因来源名称写法不同而修改模板。不同实际频道不会合并，存在歧义的别名会被排除。新增正则请使用 `re:` 前缀，并确保能区分同系列频道（例如 CCTV-5 与 CCTV-5+）。
 
 
 - 黑名单（`config/blacklist.txt`）
 
   符合黑名单关键字的接口将会被过滤，不会被收集，比如含广告等低质量接口
-  ![黑名单](./images/blacklist.png '黑名单')
 
 
 - 白名单（`config/whitelist.txt`）
 
   白名单内的接口或订阅源获取的接口将不会参与测速，优先排序至结果最前。填写频道名称会直接保留该记录至最终结果，如：CCTV-1,接口地址，只填写接口地址则对所有频道生效，多条记录换行输入。
-  ![白名单](./images/whitelist.png '白名单')
 
-
-- 组播数据（`config/rtp`）
-
-  此外，对于组播源数据你也可以自行维护，文件位于config/rtp目录下，文件命名格式为：`地区_运营商.txt`
-  ![组播数据](./images/rtp.png '组播数据')
+> [!TIP]
+> 如果运行后没有频道数据，日志会区分“未配置数据源、订阅请求无数据、频道未匹配、结果全部被过滤”等原因。GUI 可从首页进入“配置数据源”；Docker 用户应确认容器内 `/iptv-api/config/subscribe.txt` 不是空文件。
 
 ### 运行更新
 
@@ -210,8 +249,8 @@
 此时您可以访问文件链接，查看最新结果有没有同步即可：
 https://raw.githubusercontent.com/您的github用户名/仓库名称（对应上述Fork创建时的iptv-api）/master/output/user_result.txt
 
-或者代理地址：
-https://cdn.jsdelivr.net/gh/您的github用户名/仓库名称（对应上述Fork创建时的TV）@master/output/user_result.txt
+代理加速地址（推荐）：
+{cdn_url}/https://raw.githubusercontent.com/您的github用户名/仓库名称（对应上述Fork创建时的iptv-api）/master/output/user_result.txt
 
 ![用户名与仓库名称](./images/rep-info.png '用户名与仓库名称')
 
@@ -219,24 +258,7 @@ https://cdn.jsdelivr.net/gh/您的github用户名/仓库名称（对应上述For
 等播放器配置栏中即可使用~
 
 > [!NOTE]\
-> 除了首次执行工作流需要您手动触发，后续执行（默认北京时间`每日6:00与18:00`）将自动触发。如果您修改了模板或配置文件想立刻执行更新，可手动触发（2）中的
-`Run workflow`即可。
-
-#### 4.修改工作流更新频率（可选）
-
-如果您想修改更新频率（默认北京时间每日`6:00与18:00`），可修改`on:schedule:- cron`字段：
-![.github/workflows/main.yml](./images/schedule-cron.png '.github/workflows/main.yml')
-
-如果您想 每 2 天执行更新可以这样修改：
-
-```bash
-- cron: '0 22 */2 * *'
-- cron: '0 10 */2 * *'
-```
-
-> [!WARNING]
-> 1. 强烈不建议修改更新频率过高，因为短时间内的接口内容并无差异，过高的更新频率与高耗时运行的工作流都有可能被判定为资源滥用，导致仓库与账户被封禁的风险。
-> 2. 请留意您的工作流运行时长，若发现执行时间过长，需要适当删减模板中频道数量、修改配置中的分页数量和接口数量，以达到合规的运行要求。
+> 如果您修改了模板或配置文件想立刻执行更新，可手动触发（2）中的`Run workflow`即可。
 
 ## 命令行
 
@@ -270,64 +292,116 @@ pipenv run service
 
 ## GUI 软件
 
-1. 下载[IPTV-API 更新软件](https://github.com/Guovin/iptv-api/releases)，打开软件，点击启动，即可进行更新
+新版桌面 GUI 面向 Windows 与 macOS，提供一键更新、实时进度、频道与结果管理、重新测速、RTMP 推流监控、数据源配置及任务历史。Docker 部署使用 Web 结果页，不包含此桌面界面。
 
-2. 或者在项目目录下运行以下命令，即可打开 GUI 软件：
+<div align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="./images/desktop-ui-dark.png">
+    <source media="(prefers-color-scheme: light)" srcset="./images/desktop-ui.png">
+    <img src="./images/desktop-ui.png" alt="IPTV-API 新版桌面端界面" width="100%"/>
+  </picture>
+  <details>
+    <summary>🌓 切换显示模式</summary>
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="./images/desktop-ui.png">
+      <source media="(prefers-color-scheme: light)" srcset="./images/desktop-ui-dark.png">
+      <img src="./images/desktop-ui-dark.png" alt="IPTV-API 新版桌面端另一主题界面" width="100%"/>
+    </picture>
+  </details>
+</div>
+
+在项目目录安装依赖并启动：
 
 ```shell
+pipenv install --dev
 pipenv run ui
 ```
 
-![IPTV-API 更新软件](./images/ui.png 'IPTV-API 更新软件')
+构建当前系统的桌面应用：
 
-如果你看不懂软件的配置项，不要动，直接点启动即可
+```shell
+pipenv run ui_build
+```
+
+配置保存到 `config/user_config.ini`，运行结果、频道快照、任务历史与日志保存在 `output/`。Windows 打包应用默认会将这两个目录创建在可执行文件所在目录，方便备份、迁移和直接访问；自动更新会保留其中的用户数据。若应用安装目录不可写，才会回退到系统应用数据目录。macOS 保持使用系统应用数据目录。
+
+可在桌面端的“设置”页面点击“数据目录”选择位置，并重启应用使其生效；“恢复默认目录”可撤销此选择。如需由部署脚本指定位置，可在启动时指定 `--data-dir`，或设置 `IPTV_API_DATA_DIR` 环境变量。命令行参数优先级更高：
+
+```shell
+IPTV-API-GUI.exe --data-dir "D:\\IPTV-API 数据"
+```
+
+启用分辨率检测前请安装 FFmpeg。Windows 包内可附带 nginx-rtmp；macOS 需要安装带 RTMP 模块的 nginx，桌面端会自动生成独立配置并启动，也可通过 `IPTV_API_NGINX_PATH` 和 `IPTV_API_NGINX_RTMP_MODULE` 指定路径。
+
+> [!WARNING]
+> 旧版 Tkinter 界面已弃用，仅为兼容现有用户而临时保留，并将在后续版本中移除。该界面不再维护、修复问题或新增功能；过渡期间仍可通过 `pipenv run legacy_ui` 启动，并通过 `pipenv run legacy_ui_build` 打包。
 
 ## Docker
 
-### 1. 拉取镜像
+### 1. Compose 部署（推荐）
+
+下载[docker-compose.yml](../docker-compose.yml)或复制内容创建（内部参数可按需更改），在文件所在路径下运行以下命令即可部署：
+
+```bash
+docker compose up -d
+```
+
+### 2. 手动命令部署
+
+#### （1）拉取镜像
 
 ```bash
 docker pull guovern/iptv-api:latest
 ```
 
-🚀 代理加速（推荐国内用户使用）：
+> [!CAUTION]
+> 若官方镜像拉取失败，可使用以下代理加速地址；它可能提供旧版本镜像。
 
 ```bash
 docker pull docker.1ms.run/guovern/iptv-api:latest
 ```
 
-### 2. 运行容器
+#### （2）运行容器
 
 ```bash
-docker run -d -p 8000:8000 guovern/iptv-api
+docker run -d -p 80:8080 guovern/iptv-api
 ```
 
-#### 挂载（推荐）：
+**环境变量：**
 
-实现宿主机文件与容器文件同步，修改模板、配置、获取更新结果文件可直接在宿主机文件夹下操作
+| 变量              | 描述                                                | 默认值       |
+|:----------------|:--------------------------------------------------|:----------|
+| PUBLIC_URL      | 推荐：完整公网地址，例如 `http://192.168.1.10` 或 `https://iptv.example.com` |           |
+| PUBLIC_DOMAIN   | 兼容配置：`PUBLIC_URL` 留空时使用的公网域名或 IP                    | 127.0.0.1 |
+| PUBLIC_PORT     | 兼容配置：`PUBLIC_URL` 留空时使用的宿主机映射端口                    | 80        |
+| NGINX_HTTP_PORT | 高级兼容配置：容器内部 HTTP 端口，通常保持默认                        | 8080      |
 
-以宿主机路径/etc/docker 为例：
+> [!NOTE]
+> 当宿主机/Docker 已启用 IPv6 时，容器会自动同时监听 IPv6 地址，无需额外配置；纯 IPv4 或禁用 IPv6 的环境则自动跳过。
+
+如果需要修改环境变量，在上述运行命令后添加以下参数：
 
 ```bash
--v /etc/docker/config:/iptv-api/config
--v /etc/docker/output:/iptv-api/output
+# 推荐：直接设置完整公网地址
+-e PUBLIC_URL=https://iptv.example.com
 ```
 
-> [!WARNING]\
-> 如果重新拉取镜像进行更新版本后，涉及到配置文件变更或增加新配置时，务必覆盖主机的旧配置文件（config目录），因为主机的配置文件是无法自动更新的，否则容器还是以旧配置运行。
+使用仓库中的 Compose 文件时，只需通过 `PORT` 修改宿主机端口，例如
+`PORT=8088 docker compose up -d`。
+未设置或留空的 `PUBLIC_URL` 不会覆盖挂载配置文件中的 `public_url`。
 
-#### 环境变量：
+除了以上环境变量，还支持通过环境变量覆盖配置文件中的[配置项](../docs/config.md)
 
-| 变量              | 描述             | 默认值  |
-|:----------------|:---------------|:-----|
-| APP_HOST        | 服务host地址       | 本机IP |
-| APP_PORT        | 服务端口           | 8000 |
-| NGINX_HTTP_PORT | Nginx HTTP服务端口 | 8080 |
-| NGINX_RTMP_PORT | Nginx RTMP服务端口 | 1935 |
+**挂载：** 实现宿主机文件与容器文件同步，修改模板、配置、获取更新结果文件可直接在宿主机文件夹下操作，在上述运行命令后添加以下参数
 
-除了以上环境变量，还支持通过环境变量覆盖配置文件中的[配置项](./config.md)
+```bash
+# 挂载配置目录
+-v /iptv-api/config:/iptv-api/config
+# 挂载结果目录
+-v /iptv-api/output:/iptv-api/output
+```
 
-### 3. 更新结果
+#### 3. 更新结果
 
 | 接口              | 描述          |
 |:----------------|:------------|
@@ -344,22 +418,151 @@ docker run -d -p 8000:8000 guovern/iptv-api
 | /log/result     | 有效结果的日志     |
 | /log/speed-test | 所有参与测速接口的日志 |
 | /log/statistic  | 统计结果的日志     |
-| /log/nomatch    | 未匹配频道的日志    |
+| /log/unmatch    | 未匹配频道的日志    |
 
-- RTMP 推流：
+**RTMP 推流：**
 
-> [!NOTE]
-> 1. 开启推流后，默认会将获取到的接口（如订阅源）进行推流
-> 2. 如果需要对本地视频源进行推流，可在`config`目录下新建`hls`文件夹
-> 3. 将以`频道名称命名`的视频文件放入其中，程序会自动推流到对应的频道中
-> 4. 可访问 http://localhost:8080/stat 查看实时推流状态统计数据
+> [!WARNING]
+> 开启推流后会默认推流获取到的接口（如订阅源）。请仅对你有明确授权、可合法分发或仅用于内部测试的内容启用该功能。在中国大陆使用时，请特别确认内容授权、版权、网络视听与广播电视等相关合规要求；不要将本项目用于传播、转发或公开分发未经授权的直播源/节目源。
+
+如果是服务器部署，建议通过 `PUBLIC_URL` 配置完整公网地址；旧版 `PUBLIC_DOMAIN` 与 `PUBLIC_PORT` 仍兼容。若需推流本地视频源，可在 `config` 目录下新建 `hls` 文件夹，将以频道名称命名的视频文件放入其中，程序会自动推流到对应频道中。
 
 | 推流接口          | 描述           |
 |:--------------|:-------------|
 | /hls          | 推流接口         |
 | /hls/txt      | 推流txt接口      |
 | /hls/m3u      | 推流m3u接口      |
+| /hls/ipv4     | 推流ipv4 默认接口  |
+| /hls/ipv6     | 推流ipv6 默认接口  |
 | /hls/ipv4/txt | 推流ipv4 txt接口 |
 | /hls/ipv4/m3u | 推流ipv4 m3u接口 |
 | /hls/ipv6/txt | 推流ipv6 txt接口 |
 | /hls/ipv6/m3u | 推流ipv6 m3u接口 |
+| /stat         | 推流状态统计接口     |
+
+### 推流使用教程
+
+Docker 中启用推流很简单——只需做少量配置并将需要推流的频道或视频放到指定位置，程序会自动将这些源通过内置 RTMP/HTTP 推出为可播放的 HLS 流。
+
+> [!WARNING]
+> 请仅用于你有明确授权的内容、个人自有内容或封闭环境的技术测试，不要用于未经授权的公开转播。
+
+下面以两种常见方式说明：订阅源推流（在线源）和本地视频推流（上传视频文件）。
+
+#### 1. 启动前准备（以 Docker Compose 部署为例）
+
+- 使用本仓库提供的 `docker-compose.yml`，确认并根据需要修改下面的环境变量：
+    - `PORT`：映射到宿主机的访问端口。
+    - `PUBLIC_URL`：推荐填写完整公网地址，用于生成推流和播放列表链接。
+    - `NGINX_HTTP_PORT`：高级兼容项，容器内部 HTTP 端口通常保持默认。
+- 确保将配置目录挂载到容器内（默认：`/iptv-api/config`），便于在宿主机上修改模板、放置本地视频等。
+
+示例（摘自 compose 配置，保留用于参考）：
+
+```yml
+services:
+  iptv-api:
+    image: guovern/iptv-api:latest
+    container_name: iptv-api
+    restart: unless-stopped
+
+    ports:
+      - "${PORT:-80}:8080" # PORT 是用户访问端口；8080 是固定的容器内部端口
+
+    volumes:
+      - /iptv-api/config:/iptv-api/config # 修改为宿主机配置文件夹路径:容器内配置文件夹路径
+      - /iptv-api/output:/iptv-api/output
+
+    environment:
+      PUBLIC_URL: "${PUBLIC_URL:-http://192.168.1.95}" # 修改为完整公网地址
+      PUBLIC_PORT: "${PORT:-80}" # 兼容旧配置，由 PORT 自动同步
+      NGINX_HTTP_PORT: "8080" # 高级兼容项，通常不要修改
+      CDN_URL: ""
+      HTTP_PROXY: ""
+```
+
+#### 2. 订阅源推流（在线源）
+
+- 在 `config/subscribe.txt` 中添加订阅地址（支持 txt 和 m3u）。启动后，程序会读取订阅并对其中的频道进行推流。
+- 推流接口示例：访问 `/hls/txt`、`/hls/m3u` 或带 ipv4/ipv6 前缀的接口以查看当前推流的频道列表。
+
+#### 3. 本地视频推流（服务器上的视频文件）
+
+- 在挂载的 `config` 目录下创建 `hls` 文件夹（若使用容器挂载为 `/iptv-api/config/hls`），将需要推流的本地视频文件放入，文件名应与模板里的频道名称对应。
+
+例如：
+
+```
+iptv-api/
+├── config
+│   └── hls
+│       └── 海洋.mp4
+```
+
+- 在 `config/demo.txt` 中添加对应频道条目，程序会将该本地文件当成该频道的推流源。
+
+示例模板片段：
+
+```markdown
+📺央视频道,#genre#
+CCTV-1
+
+📡卫视频道,#genre#
+广东卫视
+
+🚀本地视频,#genre#
+海洋
+```
+
+#### 4. 启动并验证
+
+- 启动容器：
+
+```bash
+docker compose up -d
+```
+
+- 启动成功后可通过以下页面/接口确认：
+    - 启动日志：
+      ![Finish-Log](./images/finish-log.png 'Finish Log')
+
+    - 推流结果（txt 格式示例）：
+      访问 `/hls/txt` 可查看当前推流的地址及说明：
+      ![Hls-Txt-Result](./images/hls-txt-result.png 'Hls Txt Result')
+
+    - 浏览器播放示例（订阅源与本地视频）：
+      ![Hls-Web-Subscribe](./images/hls-web-subscribe.png 'Hls Web Subscribe')
+      ![Hls-Web-Local](./images/hls-web-local.png 'Hls Web Local')
+
+    - 在播放器中加载完整频道菜单（示例使用 PotPlayer）：
+      ![PotPlayer](./images/potplayer.png 'PotPlayer')
+
+#### 5. 监控与日志
+
+- 推流状态统计页面 `/stat` 用于查看当前推流数、流量等：
+  ![Rtmp-Stat](./images/rtmp-stat.png 'Rtmp Stat')
+
+- 也可以查看容器日志来观察频道开始/停止推流的详细记录：
+    - 频道开始推流：
+      ![Hls-Start-Log](./images/hls-start-log.png 'Hls Start Log')
+    - 频道空闲无人观看自动停止：
+      ![hls-will-Stop-Log](./images/hls-will-stop-log.png 'Rtmp Will Stop Log')
+      ![hls-Stop-Log](./images/hls-stop-log.png 'Rtmp Stop Log')
+
+#### 6. 常见提示与调优建议
+
+- 公网访问与防火墙：确保 `PUBLIC_URL` 中的 HTTP 端口和 RTMP 端口已对外放通（防火墙、云服务安全组等）。
+- 域名与证书：若使用域名并启用 HTTPS，请直接将 `PUBLIC_URL` 设置为 `https://你的域名`，并在外部配置好反向代理或证书。
+- 性能与并发：本地推流会消耗 CPU 和带宽，建议合理设置 `rtmp_max_streams` 限制并发推流数量，避免服务器过载。
+- 空闲停止：`rtmp_idle_timeout` 控制无人观看后自动停止推流的超时时间（秒），可根据服务器资源与使用场景调整。
+
+#### 7. 推流常用相关配置项
+
+```ini
+# RTMP 频道接口空闲停止推流超时时长（秒）
+rtmp_idle_timeout = 300
+# RTMP 推流最大并发数量，避免过高导致服务器压力过大
+rtmp_max_streams = 10
+```
+
+以上是简洁的推流使用说明。按需调整配置并通过 `/hls/*` 与 `/stat` 等接口验证推流状态和可用性即可。

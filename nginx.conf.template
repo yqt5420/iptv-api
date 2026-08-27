@@ -1,5 +1,7 @@
 worker_processes 1;
 
+pid /tmp/nginx.pid;
+
 error_log /var/log/nginx/error.log error;
 
 events {
@@ -15,7 +17,7 @@ rtmp {
             hls on;
             hls_path /tmp/hls;
             hls_fragment 3s;
-            on_publish http://127.0.0.1:${APP_PORT}/on_publish;
+            hls_playlist_length 60;
             on_done    http://127.0.0.1:${APP_PORT}/on_done;
         }
     }
@@ -24,6 +26,16 @@ rtmp {
 http {
     server {
         listen ${NGINX_HTTP_PORT};
+        ${IPV6_HTTP_LISTEN}
+
+        location / {
+            proxy_pass http://127.0.0.1:${APP_PORT};
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            add_header Access-Control-Allow-Origin *;
+        }
 
         # This URL provides RTMP statistics in XML
         location /stat {
@@ -42,7 +54,7 @@ http {
         }
 
         location ~ ^/hls/(.+)\.ts$ {
-            root   temp;
+            root /tmp;
             types {
                 video/mp2t ts;
             }
